@@ -11,15 +11,18 @@ Usage: widget.
 
 class BioWidget extends WP_Widget {
     /** constructor */
-    function BioWidget() {
-        parent::WP_Widget(false, $name = 'Author Bio');  
-    }
+    function __construct() {
+		$widget_ops = array('classname' => 'BioWidget', 'description' => __( 'Display post or page author\'s bio.') );
+		parent::__construct('BioWidget', __('Author Bio Widget'), $widget_ops);
+	}
 
     function widget($args, $instance) {
     
     global $post;  
       $title = apply_filters('widget_title', $instance['title']);
       $av_size = $instance['size'];
+      $des_limit = $instance['limit'];
+
     
     $author = $post->post_author;
     
@@ -28,6 +31,13 @@ class BioWidget extends WP_Widget {
     $avatar = get_avatar($author, $av_size, 'Gravatar Logo', $alt_name.'-photo');
     $description = get_the_author_meta('description', $author);
     $author_link = get_author_posts_url($author);
+    
+    // Perform Limiting of description
+    if($des_limit > 0){
+	    $description = explode( ' ', $description );
+	    $description = array_slice( $description, 0, $des_limit );
+	    $description = implode( ' ', $description );
+    }
    ?> 
    
    
@@ -46,8 +56,10 @@ class BioWidget extends WP_Widget {
   $instance = $old_instance;
   $instance['title'] = strip_tags($new_instance['title']);
   $instance['size'] = strip_tags($new_instance['size']);
+  $instance['limit'] = strip_tags($new_instance['limit']);
         return $instance;
-    }
+  }
+
 
     function form($instance) {
       if(array_key_exists('title', $instance)){
@@ -57,6 +69,10 @@ class BioWidget extends WP_Widget {
       if(array_key_exists('size', $instance)){
         $size = esc_attr($instance['size']);
       }else{$size=64;}
+      
+      if(array_key_exists('limit', $instance)){
+        $limit = esc_attr($instance['limit']);
+      }else{$limit=0;}
      
         ?>
             <p><label for="<?php echo $this->get_field_id('title'); ?>"><?php _e('Title:'); ?> <input class="widefat" id="<?php echo $this->get_field_id('title'); ?>" name="<?php echo $this->get_field_name('title'); ?>" type="text" value="<?php echo $title; ?>" /></label></p>
@@ -66,7 +82,14 @@ class BioWidget extends WP_Widget {
              for ( $i = 16; $i <= 256; $i+=16 )
               echo "<option value='$i' " . ( $size == $i ? "selected='selected'" : '' ) . ">$i</option>";
                ?>
-              </select></label></p> 
+              </select></label></p>
+            <p><label for="<?php echo $this->get_field_id('limit'); ?>"><?php _e('Description Limit:'); ?>
+              <select id="<?php echo $this->get_field_id('limit'); ?>" name="<?php echo $this->get_field_name('limit'); ?>" value="<?php echo $limit; ?>" >
+             <?php
+             for ( $i = 0; $i <= 100; $i+=10 )
+              echo "<option value='$i' " . ( $limit == $i ? "selected='selected'" : '' ) . ">".($i == 0 ? 'No Limit' : $i )."</option>";
+               ?>
+              </select></label></p>
         <?php 
     }
 }
